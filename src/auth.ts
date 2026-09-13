@@ -132,8 +132,8 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt', maxAge: 24 * 60 * 60 },
   secret: env.sessionSecret || UNCONFIGURED_SECRET,
   pages: {
-    signIn: '/sign-in',
-    error: '/sign-in',
+    signIn: '/entrar',
+    error: '/entrar',
   },
   providers: loginConfigured()
     ? [

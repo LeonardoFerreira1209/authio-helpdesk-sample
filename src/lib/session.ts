@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers'
 import { decode, type JWT } from 'next-auth/jwt'
 
-import { hasAnyRole, permissionsFromToken, rolesFromToken } from '@/lib/authz'
+import { hasAnyRole, rolesFromToken } from '@/lib/authz'
 import { env } from '@/lib/env'
 import { decodeClaims, type Claims } from '@/lib/jwt'
 
@@ -28,9 +28,6 @@ export interface Caller {
 
   /** Roles read out of the access token. */
   roles: string[]
-
-  /** What each role is allowed to do, as Authio described it in the token. */
-  permissions: Record<string, string[]>
 
   /** Every claim in the access token, decoded. */
   claims: Claims
@@ -112,7 +109,6 @@ export async function currentCaller(): Promise<Caller | null> {
     name: jwt.name ?? (typeof claims.name === 'string' ? claims.name : ''),
     email: jwt.email ?? (typeof claims.email === 'string' ? claims.email : ''),
     roles: rolesFromToken(claims),
-    permissions: permissionsFromToken(claims),
     claims,
     accessToken: jwt.accessToken,
   }
@@ -151,7 +147,7 @@ export async function requireCaller(): Promise<Guard> {
   if (!caller) {
     return {
       ok: false,
-      response: refuse(401, 'Sessão ausente ou expirada. Entre de novo pelo Authio.'),
+      response: refuse(401, 'Sua sessão expirou. Entre novamente.'),
     }
   }
 
@@ -177,41 +173,6 @@ export async function requireRole(...roles: string[]): Promise<Guard> {
         403,
         'Seu usuário não tem o papel exigido por este endpoint.',
         { required: roles, held: guard.caller.roles },
-      ),
-    }
-  }
-
-  return guard
-}
-
-/**
- * Requires a signed-in caller whose token carries a given claim.
- *
- * Separate from the role check on purpose. A role answers "may this person do
- * it at all"; a claim like `department` answers "to which records", and an
- * endpoint that needs the second cannot be made safe by the first.
- *
- * @param claim - The claim name that must be present and non-empty.
- */
-export async function requireClaim(claim: string): Promise<Guard> {
-  const guard = await requireCaller()
-
-  if (!guard.ok) {
-    return guard
-  }
-
-  const value = guard.caller.claims[claim]
-
-  if (value === undefined || value === null || value === '') {
-    return {
-      ok: false,
-      response: refuse(
-        403,
-        `Seu token não carrega a claim "${claim}", que este endpoint usa para decidir quais registros você enxerga.`,
-        {
-          required: claim,
-          hint: `Cadastre a claim no usuário em Authio e projete-a no token do client "${env.clientId}" por um claim mapper.`,
-        },
       ),
     }
   }

@@ -3,9 +3,11 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Helpdesk — identidade pelo Authio',
-  description:
-    'Aplicação de exemplo que delega login, papéis e cadastro de usuários ao Authio.',
+  title: {
+    default: 'Helpdesk',
+    template: '%s · Helpdesk',
+  },
+  description: 'Atendimento interno.',
 }
 
 /**

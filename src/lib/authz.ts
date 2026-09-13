@@ -168,83 +168,17 @@ export function hasAnyRole(held: string[], required: readonly string[]): boolean
 }
 
 /**
- * The permissions each role carries, as Authio described them in the token.
+ * The value of a claim, or an empty string when it is absent.
  *
- * Rendered on the screen next to the role name: a role is only meaningful
- * through the permissions attached to it, and showing the name alone hides the
- * half that actually decides anything on the Authio side.
- *
- * @param claims - The decoded access token payload.
- */
-export function permissionsFromToken(claims: Claims | null): Record<string, string[]> {
-  if (!claims) {
-    return {}
-  }
-
-  const source = typeof claims.user_resource_access === 'string'
-    ? safeJson(claims.user_resource_access)
-    : claims.user_resource_access
-
-  if (!source || typeof source !== 'object' || Array.isArray(source)) {
-    return {}
-  }
-
-  const result: Record<string, string[]> = {}
-
-  for (const [role, permissions] of Object.entries(source as Record<string, unknown>)) {
-    if (!permissions || typeof permissions !== 'object') {
-      result[role] = []
-
-      continue
-    }
-
-    result[role] = Object.entries(permissions as Record<string, unknown>).map(
-      ([resource, methods]) =>
-        `${resource}: ${Array.isArray(methods) ? methods.join(', ') : String(methods)}`,
-    )
-  }
-
-  return result
-}
-
-/**
- * Claims worth showing on the screen, with the OIDC plumbing left out.
- *
- * `iat`, `exp`, `nbf` and the rest are protocol machinery, not attributes of
- * the person, and a table that lists them buries the three or four claims an
- * application actually makes decisions with.
+ * Absent and empty are treated the same on purpose: a `department` that arrived
+ * as `""` scopes a report to nothing, and letting that through would show an
+ * empty report instead of saying the account is not linked to an area.
  *
  * @param claims - The decoded access token payload.
+ * @param name - The claim to read.
  */
-export function businessClaims(claims: Claims | null): Array<{ name: string; value: string }> {
-  if (!claims) {
-    return []
-  }
+export function claimValue(claims: Claims | null, name: string): string {
+  const value = claims?.[name]
 
-  const plumbing = new Set([
-    'iat',
-    'exp',
-    'nbf',
-    'jti',
-    'iss',
-    'aud',
-    'typ',
-    'azp',
-    'at_hash',
-    'c_hash',
-    'sid',
-    'auth_time',
-    'user_resource_access',
-    'system_resource_access',
-    'realm_access',
-    'resource_access',
-  ])
-
-  return Object.entries(claims)
-    .filter(([name]) => !plumbing.has(name))
-    .map(([name, value]) => ({
-      name,
-      value: typeof value === 'string' ? value : JSON.stringify(value),
-    }))
-    .sort((first, second) => first.name.localeCompare(second.name))
+  return typeof value === 'string' ? value.trim() : ''
 }
