@@ -1,3 +1,4 @@
+import { AlertTriangleIcon } from '@/components/icons'
 import { TeamTable } from '@/components/team-table'
 import { ROLES } from '@/lib/authz'
 import { adminGap } from '@/lib/env'
@@ -25,7 +26,7 @@ export default async function TeamPage() {
 
       {gap ? (
         <div className="note danger">
-          A administração de usuários está indisponível: {gap}
+          <AlertTriangleIcon size={16} />A administração de usuários está indisponível: {gap}
         </div>
       ) : (
         <TeamTable currentUserId={caller.userId} />

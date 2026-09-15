@@ -1,5 +1,7 @@
 import Link from 'next/link'
 
+import { EmptyState } from '@/components/empty-state'
+import { InboxIcon, SearchIcon } from '@/components/icons'
 import { PriorityBadge, StatusBadge } from '@/components/ticket-badges'
 import { hasAnyRole, ROLES } from '@/lib/authz'
 import { relative } from '@/lib/format'
@@ -63,7 +65,8 @@ export default async function TicketsPage({
 
       <form className="card">
         <div className="toolbar">
-          <div className="grow">
+          <div className="grow input-icon">
+            <SearchIcon size={15} />
             <input name="q" placeholder="Buscar por assunto, número ou solicitante" defaultValue={filters.q ?? ''} />
           </div>
           <select name="status" defaultValue={filters.status ?? ''} style={{ width: 190 }}>
@@ -135,7 +138,18 @@ export default async function TicketsPage({
           </table>
         </div>
 
-        {tickets.length === 0 ? <div className="empty">Nenhum chamado com esses filtros.</div> : null}
+        {tickets.length === 0 ? (
+          <EmptyState
+            icon={<InboxIcon size={26} />}
+            title="Nenhum chamado com esses filtros"
+            description="Ajuste a busca ou limpe os filtros para ver a fila inteira."
+            action={
+              <Link className="button" href="/chamados">
+                Limpar filtros
+              </Link>
+            }
+          />
+        ) : null}
       </div>
     </div>
   )

@@ -1,3 +1,4 @@
+import { FlameIcon } from '@/components/icons'
 import {
   PRIORITY_LABEL,
   STATUS_LABEL,
@@ -11,6 +12,14 @@ const STATUS_TONE: Record<TicketStatus, string> = {
   em_andamento: 'accent',
   aguardando: 'warn',
   resolvido: 'ok',
+}
+
+/** The CSS color variable behind each status's tone, for charts that need the raw color. */
+export const STATUS_COLOR: Record<TicketStatus, string> = {
+  aberto: 'var(--info)',
+  em_andamento: 'var(--accent)',
+  aguardando: 'var(--warn)',
+  resolvido: 'var(--ok)',
 }
 
 /** Which badge tone each priority wears. */
@@ -41,5 +50,10 @@ export function StatusBadge({ status }: { status: TicketStatus }) {
  * @param props.priority - The priority to render.
  */
 export function PriorityBadge({ priority }: { priority: TicketPriority }) {
-  return <span className={`badge ${PRIORITY_TONE[priority]}`}>{PRIORITY_LABEL[priority]}</span>
+  return (
+    <span className={`badge ${PRIORITY_TONE[priority]}`}>
+      {priority === 'critica' ? <FlameIcon size={11} /> : null}
+      {PRIORITY_LABEL[priority]}
+    </span>
+  )
 }

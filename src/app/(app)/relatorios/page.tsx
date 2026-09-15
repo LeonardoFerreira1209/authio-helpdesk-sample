@@ -1,3 +1,5 @@
+import { BuildingIcon, ChartIcon, ClockIcon, FlameIcon, InboxIcon } from '@/components/icons'
+import { STATUS_COLOR } from '@/components/ticket-badges'
 import { claimValue, DEPARTMENT_CLAIM } from '@/lib/authz'
 import { relative } from '@/lib/format'
 import { requirePage } from '@/lib/guard'
@@ -25,7 +27,10 @@ export default async function ReportsPage() {
         </div>
 
         <div className="card">
-          <h2>Sua conta não está vinculada a uma área</h2>
+          <h2>
+            <BuildingIcon size={16} />
+            Sua conta não está vinculada a uma área
+          </h2>
           <p>
             O relatório é sempre da área de quem abre — e a sua conta não informa nenhuma. Peça a um
             administrador para registrar o atributo <code>{DEPARTMENT_CLAIM}</code> no seu usuário.
@@ -51,27 +56,50 @@ export default async function ReportsPage() {
             Área <strong>{department}</strong> · {report.total} chamado(s) no período.
           </p>
         </div>
-        <span className="badge accent">escopo definido pela sua conta</span>
+        <span className="badge accent">
+          <BuildingIcon size={12} />
+          escopo definido pela sua conta
+        </span>
       </div>
 
       <div className="cards">
         <div className="stat">
-          <div className="value">{report.total}</div>
-          <div className="label">Total da área</div>
-        </div>
-        <div className="stat">
-          <div className="value">{report.total - report.byStatus.resolvido}</div>
-          <div className="label">Em aberto</div>
-        </div>
-        <div className="stat">
-          <div className="value">{report.byPriority.critica + report.byPriority.alta}</div>
-          <div className="label">Alta ou crítica</div>
-        </div>
-        <div className="stat">
-          <div className="value" style={{ fontSize: 18, paddingTop: 6 }}>
-            {report.oldestOpenAt ? relative(report.oldestOpenAt) : '—'}
+          <div>
+            <div className="value">{report.total}</div>
+            <div className="label">Total da área</div>
           </div>
-          <div className="label">Mais antigo em aberto</div>
+          <span className="icon-chip">
+            <ChartIcon size={17} />
+          </span>
+        </div>
+        <div className="stat">
+          <div>
+            <div className="value">{report.total - report.byStatus.resolvido}</div>
+            <div className="label">Em aberto</div>
+          </div>
+          <span className="icon-chip tone-info">
+            <InboxIcon size={17} />
+          </span>
+        </div>
+        <div className="stat">
+          <div>
+            <div className="value">{report.byPriority.critica + report.byPriority.alta}</div>
+            <div className="label">Alta ou crítica</div>
+          </div>
+          <span className="icon-chip tone-danger">
+            <FlameIcon size={16} />
+          </span>
+        </div>
+        <div className="stat">
+          <div>
+            <div className="value" style={{ fontSize: 18, paddingTop: 6 }}>
+              {report.oldestOpenAt ? relative(report.oldestOpenAt) : '—'}
+            </div>
+            <div className="label">Mais antigo em aberto</div>
+          </div>
+          <span className="icon-chip tone-warn">
+            <ClockIcon size={17} />
+          </span>
         </div>
       </div>
 
@@ -90,7 +118,10 @@ export default async function ReportsPage() {
                 <div className="bar">
                   <div
                     className="bar-fill"
-                    style={{ width: `${(report.byStatus[status] / maximum) * 100}%` }}
+                    style={{
+                      width: `${(report.byStatus[status] / maximum) * 100}%`,
+                      background: STATUS_COLOR[status],
+                    }}
                   />
                 </div>
               </div>

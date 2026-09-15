@@ -1,5 +1,6 @@
 import Link from 'next/link'
 
+import { ArrowLeftIcon, ShieldOffIcon } from '@/components/icons'
 import { requirePage } from '@/lib/guard'
 
 /**
@@ -22,9 +23,14 @@ export default async function ForbiddenPage({
   return (
     <div className="stack" style={{ maxWidth: 620 }}>
       <div className="page-head">
-        <div>
-          <h1>Você não tem acesso a esta área</h1>
-          <p>Sua sessão está válida — o que falta é permissão.</p>
+        <div className="row" style={{ gap: 14 }}>
+          <span className="icon-chip lg tone-danger">
+            <ShieldOffIcon size={22} />
+          </span>
+          <div>
+            <h1>Você não tem acesso a esta área</h1>
+            <p>Sua sessão está válida — o que falta é permissão.</p>
+          </div>
         </div>
       </div>
 
@@ -62,6 +68,7 @@ export default async function ForbiddenPage({
 
         <div className="row" style={{ marginTop: 18 }}>
           <Link className="button" href="/">
+            <ArrowLeftIcon size={15} />
             Voltar ao início
           </Link>
           <Link className="button" href="/minha-conta">

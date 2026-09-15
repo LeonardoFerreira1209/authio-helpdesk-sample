@@ -1,12 +1,16 @@
 import { claimValue, DEPARTMENT_CLAIM, hasAnyRole, ROLES } from '@/lib/authz'
 import type { Caller } from '@/lib/session'
 
+/** Names of the icons the sidebar knows how to draw next to a link. */
+export type NavIcon = 'home' | 'tickets' | 'reports' | 'team'
+
 /**
- * An entry in the top navigation.
+ * An entry in the navigation.
  */
 export interface NavItem {
   href: string
   label: string
+  icon: NavIcon
   /** Any one of these roles reveals the item. Absent means everyone signed in. */
   roles?: readonly string[]
   /** A claim that must be present for the item to be reachable. */
@@ -22,10 +26,15 @@ export interface NavItem {
  * never a control, since anyone can type the URL.
  */
 export const NAV: readonly NavItem[] = [
-  { href: '/', label: 'Início' },
-  { href: '/chamados', label: 'Chamados', roles: [ROLES.viewer, ROLES.agent, ROLES.admin] },
-  { href: '/relatorios', label: 'Relatórios', claim: DEPARTMENT_CLAIM },
-  { href: '/equipe', label: 'Equipe', roles: [ROLES.admin] },
+  { href: '/', label: 'Início', icon: 'home' },
+  {
+    href: '/chamados',
+    label: 'Chamados',
+    icon: 'tickets',
+    roles: [ROLES.viewer, ROLES.agent, ROLES.admin],
+  },
+  { href: '/relatorios', label: 'Relatórios', icon: 'reports', claim: DEPARTMENT_CLAIM },
+  { href: '/equipe', label: 'Equipe', icon: 'team', roles: [ROLES.admin] },
 ] as const
 
 /**

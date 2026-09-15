@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 import { CommentBox } from '@/components/comment-box'
+import { ArrowLeftIcon } from '@/components/icons'
 import { TicketActions } from '@/components/ticket-actions'
 import { PriorityBadge, StatusBadge } from '@/components/ticket-badges'
 import { hasAnyRole, ROLES } from '@/lib/authz'
@@ -33,8 +34,9 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
     <div className="stack">
       <div className="page-head">
         <div>
-          <Link className="muted" href="/chamados">
-            ← Chamados
+          <Link className="eyebrow" href="/chamados">
+            <ArrowLeftIcon size={14} />
+            Chamados
           </Link>
           <h1 style={{ marginTop: 6 }}>{ticket.subject}</h1>
           <p>

@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
+import { EmptyState } from '@/components/empty-state'
+import { SearchIcon, UsersIcon } from '@/components/icons'
+import { avatarTone, initialsOf } from '@/lib/avatar'
 import { ROLES } from '@/lib/authz'
 import { callApi, errorText } from '@/lib/http'
 
@@ -33,6 +36,27 @@ function isManaged(role: string): boolean {
 }
 
 /**
+ * Placeholder rows shown while the team is loading, so the screen has its
+ * final shape from the first paint instead of popping into place.
+ */
+function TeamSkeleton() {
+  return (
+    <div className="card flush">
+      {[0, 1, 2, 3, 4].map((row) => (
+        <div className="skeleton-row" key={row}>
+          <div className="skeleton skeleton-avatar" />
+          <div style={{ flex: 1 }}>
+            <div className="skeleton skeleton-line" style={{ width: '38%' }} />
+            <div className="skeleton skeleton-line" style={{ width: '55%' }} />
+          </div>
+          <div className="skeleton skeleton-block" style={{ width: 140 }} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
  * The team, read from the identity provider, with the Helpdesk roles editable.
  *
  * The provider replaces the whole role set on save, so roles this screen does
@@ -47,6 +71,7 @@ export function TeamTable({ currentUserId }: { currentUserId: string }) {
   const [editing, setEditing] = useState<string | null>(null)
   const [draft, setDraft] = useState<string[]>([])
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [feedback, setFeedback] = useState<{ tone: string; text: string } | null>(null)
 
@@ -56,6 +81,7 @@ export function TeamTable({ currentUserId }: { currentUserId: string }) {
     const call = await callApi(`/api/team${term ? `?search=${encodeURIComponent(term)}` : ''}`)
 
     setBusy(false)
+    setLoading(false)
     setEditing(null)
 
     if (call.ok) {
@@ -109,7 +135,8 @@ export function TeamTable({ currentUserId }: { currentUserId: string }) {
     <>
       <div className="card" style={{ marginBottom: 18 }}>
         <div className="toolbar">
-          <div className="grow">
+          <div className="grow input-icon">
+            <SearchIcon size={15} />
             <input
               placeholder="Buscar por nome ou e-mail"
               value={search}
@@ -133,115 +160,127 @@ export function TeamTable({ currentUserId }: { currentUserId: string }) {
         </div>
       ) : null}
 
-      <div className="card flush">
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Pessoa</th>
-                <th>Acesso no Helpdesk</th>
-                <th style={{ width: 200 }} />
-              </tr>
-            </thead>
-            <tbody>
-              {(team?.users ?? []).map((member) => {
-                const managed = member.roles.filter(isManaged)
-                const others = member.roles.filter((role) => !isManaged(role))
+      {loading ? (
+        <TeamSkeleton />
+      ) : (
+        <div className="card flush">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Pessoa</th>
+                  <th>Acesso no Helpdesk</th>
+                  <th style={{ width: 240 }} />
+                </tr>
+              </thead>
+              <tbody>
+                {(team?.users ?? []).map((member) => {
+                  const managed = member.roles.filter(isManaged)
+                  const others = member.roles.filter((role) => !isManaged(role))
+                  const displayName = member.name || member.userName
 
-                return (
-                  <tr key={member.id}>
-                    <td>
-                      <strong>{member.name || member.userName}</strong>
-                      {member.id === currentUserId ? (
-                        <span className="badge" style={{ marginLeft: 8 }}>
-                          você
-                        </span>
-                      ) : null}
-                      <br />
-                      <span className="muted">{member.email}</span>
-                    </td>
-
-                    <td>
-                      {editing === member.id ? (
-                        <div className="row">
-                          {MANAGED.map((role) => (
-                            <label
-                              key={role}
-                              style={{ display: 'flex', gap: 6, alignItems: 'center', margin: 0 }}
-                            >
-                              <input
-                                type="checkbox"
-                                style={{ width: 'auto' }}
-                                checked={draft.some((entry) => entry.toLowerCase() === role)}
-                                onChange={() =>
-                                  setDraft((current) =>
-                                    current.some((entry) => entry.toLowerCase() === role)
-                                      ? current.filter((entry) => entry.toLowerCase() !== role)
-                                      : [...current, role],
-                                  )
-                                }
-                              />
-                              {role.replace('helpdesk.', '')}
-                            </label>
-                          ))}
+                  return (
+                    <tr key={member.id}>
+                      <td>
+                        <div className="person-cell">
+                          <span className={`avatar avatar-${avatarTone(member.id)}`}>
+                            {initialsOf(member.name, member.userName)}
+                          </span>
+                          <span>
+                            <strong>{displayName}</strong>
+                            {member.id === currentUserId ? (
+                              <span className="badge" style={{ marginLeft: 8 }}>
+                                você
+                              </span>
+                            ) : null}
+                            <br />
+                            <span className="muted">{member.email}</span>
+                          </span>
                         </div>
-                      ) : managed.length > 0 ? (
-                        <div className="row">
-                          {managed.map((role) => (
-                            <span className="badge accent" key={role}>
-                              {role.replace('helpdesk.', '')}
-                            </span>
-                          ))}
-                          {others.length > 0 ? (
-                            <span className="badge" title={others.join(', ')}>
-                              +{others.length} fora do Helpdesk
-                            </span>
-                          ) : null}
-                        </div>
-                      ) : (
-                        <span className="muted">sem acesso</span>
-                      )}
-                    </td>
+                      </td>
 
-                    <td>
-                      {editing === member.id ? (
-                        <div className="row">
-                          <button className="primary" disabled={busy} onClick={() => void save(member)}>
-                            Salvar
+                      <td>
+                        {editing === member.id ? (
+                          <div className="row">
+                            {MANAGED.map((role) => (
+                              <label className="chip-toggle" key={role}>
+                                <input
+                                  type="checkbox"
+                                  checked={draft.some((entry) => entry.toLowerCase() === role)}
+                                  onChange={() =>
+                                    setDraft((current) =>
+                                      current.some((entry) => entry.toLowerCase() === role)
+                                        ? current.filter((entry) => entry.toLowerCase() !== role)
+                                        : [...current, role],
+                                    )
+                                  }
+                                />
+                                <span>{role.replace('helpdesk.', '')}</span>
+                              </label>
+                            ))}
+                          </div>
+                        ) : managed.length > 0 ? (
+                          <div className="row">
+                            {managed.map((role) => (
+                              <span className="badge accent" key={role}>
+                                {role.replace('helpdesk.', '')}
+                              </span>
+                            ))}
+                            {others.length > 0 ? (
+                              <span className="badge" title={others.join(', ')}>
+                                +{others.length} fora do Helpdesk
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <span className="muted">sem acesso</span>
+                        )}
+                      </td>
+
+                      <td>
+                        {editing === member.id ? (
+                          <div className="row">
+                            <button className="primary" disabled={busy} onClick={() => void save(member)}>
+                              Salvar
+                            </button>
+                            <button className="subtle" disabled={busy} onClick={() => setEditing(null)}>
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              setEditing(member.id)
+                              setDraft(managed)
+                            }}
+                          >
+                            Alterar acesso
                           </button>
-                          <button className="subtle" disabled={busy} onClick={() => setEditing(null)}>
-                            Cancelar
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setEditing(member.id)
-                            setDraft(managed)
-                          }}
-                        >
-                          Alterar acesso
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {team && team.users.length === 0 ? (
+            <EmptyState
+              icon={<UsersIcon size={24} />}
+              title="Nenhuma pessoa encontrada"
+              description="Ajuste a busca para ver outros membros da conta."
+            />
+          ) : null}
+
+          {team ? (
+            <footer>
+              {team.totalCount} pessoa(s) com conta nesta aplicação. Papéis fora do Helpdesk não são
+              alterados por esta tela.
+            </footer>
+          ) : null}
         </div>
-
-        {team && team.users.length === 0 ? (
-          <div className="empty">Nenhuma pessoa encontrada.</div>
-        ) : null}
-
-        {team ? (
-          <footer>
-            {team.totalCount} pessoa(s) com conta nesta aplicação. Papéis fora do Helpdesk não são
-            alterados por esta tela.
-          </footer>
-        ) : null}
-      </div>
+      )}
     </>
   )
 }
