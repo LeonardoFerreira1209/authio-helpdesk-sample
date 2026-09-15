@@ -166,7 +166,7 @@ export const authOptions: NextAuthOptions = {
       session.user.username = token.username ?? ''
       session.user.name = token.name ?? ''
       session.user.email = token.email ?? ''
-      session.roles = rolesFromToken(decodeClaims(token.accessToken))
+      session.roles = rolesFromToken(decodeClaims(token.accessToken), env.clientId)
       session.accessTokenExpires = token.accessTokenExpires
       session.error = token.error
 

@@ -108,7 +108,7 @@ export async function currentCaller(): Promise<Caller | null> {
         : (jwt.username ?? ''),
     name: jwt.name ?? (typeof claims.name === 'string' ? claims.name : ''),
     email: jwt.email ?? (typeof claims.email === 'string' ? claims.email : ''),
-    roles: rolesFromToken(claims),
+    roles: rolesFromToken(claims, env.clientId),
     claims,
     accessToken: jwt.accessToken,
   }

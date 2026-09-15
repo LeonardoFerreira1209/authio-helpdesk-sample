@@ -215,7 +215,7 @@ export function TeamTable({ currentUserId }: { currentUserId: string }) {
                                     )
                                   }
                                 />
-                                <span>{role.replace('helpdesk.', '')}</span>
+                                <span>{role}</span>
                               </label>
                             ))}
                           </div>
@@ -223,7 +223,7 @@ export function TeamTable({ currentUserId }: { currentUserId: string }) {
                           <div className="row">
                             {managed.map((role) => (
                               <span className="badge accent" key={role}>
-                                {role.replace('helpdesk.', '')}
+                                {role}
                               </span>
                             ))}
                             {others.length > 0 ? (

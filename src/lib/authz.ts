@@ -3,19 +3,23 @@ import type { Claims } from '@/lib/jwt'
 /**
  * The roles this application makes decisions with.
  *
- * They are plain strings because that is all a role is on the wire. Create them
- * in Authio with these exact names and assign them to the users you want to
- * test with -- the names are the whole contract between the two sides.
+ * They are plain strings because that is all a role is on the wire, and they
+ * are bare -- `viewer`, not `helpdesk.viewer` -- because Authio already scopes
+ * them by nesting: a role only ever arrives under this application's own
+ * client id in `user_resource_access` (see {@link rolesFromToken}), so the name
+ * itself does not need to repeat that scope. Create them in Authio with these
+ * exact names and assign them to the users you want to test with -- the names
+ * are the whole contract between the two sides.
  */
 export const ROLES = {
   /** Manages the team: reads every user and changes who holds which role. */
-  admin: 'helpdesk.admin',
+  admin: 'admin',
 
   /** Works tickets: reads them and writes to them. */
-  agent: 'helpdesk.agent',
+  agent: 'agent',
 
   /** Reads tickets and nothing else. */
-  viewer: 'helpdesk.viewer',
+  viewer: 'viewer',
 } as const
 
 /**
@@ -36,28 +40,40 @@ export const DEPARTMENT_CLAIM = 'department'
  * Every place a role can arrive in, across the token shapes Authio and other
  * OIDC providers emit.
  *
- * Authio puts a client user's roles in `user_resource_access`, nested two levels
- * under it -- `{ [client]: { [resource]: ["helpdesk.viewer", ...] } }` -- rather
- * than as the claim's own keys. The Keycloak-shaped `realm_access` /
- * `resource_access` and the flat `roles` claim are read too, so pointing this
- * app at a differently configured realm -- or at a claim mapper that flattens
- * roles -- does not silently produce a user with no roles at all.
+ * Authio puts a client user's roles in `user_resource_access`, nested under
+ * this application's own client id and then under a resource id --
+ * `{ helpdesk: { helpdesk: ["viewer", ...] } }` -- and sometimes repeats the
+ * same information as a flat, client-named claim (`{ helpdesk: "viewer" }`) as
+ * a shorthand. Only the entry under `clientId` is read: a token can in
+ * principle carry other clients' access too, and a bare role name like
+ * `viewer` is not unique enough across an Authio tenant to trust it for an
+ * unrelated client. The Keycloak-shaped `realm_access` / `resource_access` and
+ * the flat `roles` claim are read too, so pointing this app at a differently
+ * configured realm -- or at a claim mapper that flattens roles -- does not
+ * silently produce a user with no roles at all.
  *
  * @param claims - The decoded access token payload.
+ * @param clientId - This application's own client id in Authio, i.e. `AUTHIO_ID`.
  */
-export function rolesFromToken(claims: Claims | null): string[] {
+export function rolesFromToken(claims: Claims | null, clientId: string): string[] {
   if (!claims) {
     return []
   }
 
   const found = new Set<string>()
 
-  for (const role of resourceAccessRoles(claims.user_resource_access)) {
+  for (const role of resourceAccessRoles(claims.user_resource_access, clientId)) {
     found.add(role)
   }
 
-  for (const role of resourceAccessRoles(claims.system_resource_access)) {
+  for (const role of resourceAccessRoles(claims.system_resource_access, clientId)) {
     found.add(role)
+  }
+
+  if (clientId) {
+    for (const role of flatRoles(claims[clientId])) {
+      found.add(role)
+    }
   }
 
   for (const role of nestedRoles(claims.realm_access)) {
@@ -86,23 +102,28 @@ export function rolesFromToken(claims: Claims | null): string[] {
 }
 
 /**
- * Reads role names out of an Authio resource access claim.
+ * Reads role names out of an Authio resource access claim, for one client.
  *
  * The claim may arrive already parsed or still as the JSON string Authio
  * serialised it into, depending on whether it came from the token or from an
  * endpoint that echoed it back, so both are accepted.
  *
- * Authio nests the roles two levels down -- `{ [client]: { [resource]: [role,
- * ...] } }`, e.g. `{ helpdesk: { helpdesk: ["viewer"] } }` -- rather than
- * carrying them as the claim's own keys, so this walks the object instead of
- * reading `Object.keys` of the top level.
+ * Only `parsed[clientId]` is walked, not the whole claim: `user_resource_access`
+ * is keyed by client id first, e.g. `{ helpdesk: { helpdesk: ["viewer"] } }`,
+ * and a role nested under a different client is that client's business, not
+ * this application's.
  *
  * @param value - The claim value.
+ * @param clientId - This application's own client id in Authio.
  */
-function resourceAccessRoles(value: unknown): string[] {
+function resourceAccessRoles(value: unknown, clientId: string): string[] {
   const parsed = typeof value === 'string' ? safeJson(value) : value
 
-  return rolesNestedIn(parsed)
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !clientId) {
+    return []
+  }
+
+  return rolesNestedIn((parsed as Record<string, unknown>)[clientId])
 }
 
 /**
