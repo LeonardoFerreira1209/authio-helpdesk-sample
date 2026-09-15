@@ -36,12 +36,12 @@ export const DEPARTMENT_CLAIM = 'department'
  * Every place a role can arrive in, across the token shapes Authio and other
  * OIDC providers emit.
  *
- * Authio puts a client user's roles in `user_resource_access`, as a JSON object
- * whose keys are the role names and whose values describe what each role may do.
- * The Keycloak-shaped `realm_access` / `resource_access` and the flat `roles`
- * claim are read too, so pointing this app at a differently configured realm --
- * or at a claim mapper that flattens roles -- does not silently produce a user
- * with no roles at all.
+ * Authio puts a client user's roles in `user_resource_access`, nested two levels
+ * under it -- `{ [client]: { [resource]: ["helpdesk.viewer", ...] } }` -- rather
+ * than as the claim's own keys. The Keycloak-shaped `realm_access` /
+ * `resource_access` and the flat `roles` claim are read too, so pointing this
+ * app at a differently configured realm -- or at a claim mapper that flattens
+ * roles -- does not silently produce a user with no roles at all.
  *
  * @param claims - The decoded access token payload.
  */
@@ -92,16 +92,47 @@ export function rolesFromToken(claims: Claims | null): string[] {
  * serialised it into, depending on whether it came from the token or from an
  * endpoint that echoed it back, so both are accepted.
  *
+ * Authio nests the roles two levels down -- `{ [client]: { [resource]: [role,
+ * ...] } }`, e.g. `{ helpdesk: { helpdesk: ["viewer"] } }` -- rather than
+ * carrying them as the claim's own keys, so this walks the object instead of
+ * reading `Object.keys` of the top level.
+ *
  * @param value - The claim value.
  */
 function resourceAccessRoles(value: unknown): string[] {
   const parsed = typeof value === 'string' ? safeJson(value) : value
 
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+  return rolesNestedIn(parsed)
+}
+
+/**
+ * Collects every string held in an array anywhere inside a claim value,
+ * however deep it is nested.
+ *
+ * The depth limit is only a guard against a pathological payload; Authio's own
+ * shape is two levels deep.
+ *
+ * @param value - The (already parsed) claim value.
+ * @param depth - How many levels have been descended so far.
+ */
+function rolesNestedIn(value: unknown, depth = 0): string[] {
+  if (value == null || depth > 4) {
     return []
   }
 
-  return Object.keys(parsed as Record<string, unknown>)
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) =>
+      typeof entry === 'string' ? [entry] : rolesNestedIn(entry, depth + 1),
+    )
+  }
+
+  if (typeof value === 'object') {
+    return Object.values(value as Record<string, unknown>).flatMap((entry) =>
+      rolesNestedIn(entry, depth + 1),
+    )
+  }
+
+  return []
 }
 
 /**

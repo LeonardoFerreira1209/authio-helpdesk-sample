@@ -78,7 +78,16 @@ export function AccountForm() {
   }
 
   if (loading) {
-    return <div className="empty">Carregando seus dados...</div>
+    return (
+      <div className="field-grid">
+        {[0, 1, 2, 3, 4].map((field) => (
+          <label key={field}>
+            <span className="skeleton skeleton-line" style={{ width: '40%' }} />
+            <span className="skeleton skeleton-block" />
+          </label>
+        ))}
+      </div>
+    )
   }
 
   return (

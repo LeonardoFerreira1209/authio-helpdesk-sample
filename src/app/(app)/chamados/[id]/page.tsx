@@ -5,6 +5,7 @@ import { CommentBox } from '@/components/comment-box'
 import { ArrowLeftIcon } from '@/components/icons'
 import { TicketActions } from '@/components/ticket-actions'
 import { PriorityBadge, StatusBadge } from '@/components/ticket-badges'
+import { avatarTone, initialsOf } from '@/lib/avatar'
 import { hasAnyRole, ROLES } from '@/lib/authz'
 import { fullDate, relative } from '@/lib/format'
 import { requirePageRole } from '@/lib/guard'
@@ -62,15 +63,20 @@ export default async function TicketPage({ params }: { params: Promise<{ id: str
             <p>{ticket.comments.length} interação(ões) registrada(s).</p>
 
             {ticket.comments.length > 0 ? (
-              <div className="timeline">
+              <div className="thread">
                 {ticket.comments.map((comment) => (
-                  <article key={comment.id}>
-                    <header>
-                      <strong>{comment.author}</strong>
-                      <span>{fullDate(comment.at)}</span>
-                    </header>
-                    <p style={{ margin: 0 }}>{comment.body}</p>
-                  </article>
+                  <div className="thread-item" key={comment.id}>
+                    <span className={`avatar sm avatar-${avatarTone(comment.author)}`}>
+                      {initialsOf(comment.author, comment.author)}
+                    </span>
+                    <div className="thread-bubble">
+                      <header>
+                        <strong>{comment.author}</strong>
+                        <span>{fullDate(comment.at)}</span>
+                      </header>
+                      <p>{comment.body}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (

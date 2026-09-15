@@ -1147,29 +1147,43 @@ td .subject:hover {
   transition: width 0.4s ease;
 }
 
-.timeline {
+.thread {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
-.timeline article {
-  display: grid;
-  gap: 4px;
-  padding-left: 14px;
-  border-left: 2px solid var(--border);
+.thread-item {
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
 }
 
-.timeline article header {
+.thread-bubble {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-alt);
+  border-radius: var(--radius-sm);
+  border-top-left-radius: 3px;
+  padding: 10px 14px;
+}
+
+.thread-bubble header {
   display: flex;
   gap: 8px;
   align-items: baseline;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--text-soft);
+  margin-bottom: 3px;
 }
 
-.timeline article header strong {
+.thread-bubble header strong {
   color: var(--text);
   font-size: 13px;
+}
+
+.thread-bubble p {
+  margin: 0;
+  font-size: 13.5px;
 }
 
 .definition {

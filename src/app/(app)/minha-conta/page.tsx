@@ -1,4 +1,6 @@
 import { AccountForm } from '@/components/account-form'
+import { BuildingIcon, ShieldOffIcon } from '@/components/icons'
+import { avatarTone, initialsOf } from '@/lib/avatar'
 import { claimValue, DEPARTMENT_CLAIM, ROLES } from '@/lib/authz'
 import { adminGap } from '@/lib/env'
 import { requirePage } from '@/lib/guard'
@@ -17,13 +19,19 @@ export default async function AccountPage() {
   const caller = await requirePage()
   const gap = adminGap()
   const department = claimValue(caller.claims, DEPARTMENT_CLAIM)
+  const name = caller.name || caller.username || caller.email
 
   return (
     <div className="stack">
       <div className="page-head">
-        <div>
-          <h1>Minha conta</h1>
-          <p>Seus dados e o acesso que você tem no Helpdesk.</p>
+        <div className="row" style={{ gap: 14 }}>
+          <span className={`avatar lg avatar-${avatarTone(caller.userId || caller.email)}`}>
+            {initialsOf(caller.name, caller.email || caller.username)}
+          </span>
+          <div>
+            <h1>{name}</h1>
+            <p>{caller.email || caller.username}</p>
+          </div>
         </div>
       </div>
 
@@ -56,13 +64,17 @@ export default async function AccountPage() {
               </div>
             ) : (
               <div className="note warn">
+                <ShieldOffIcon size={16} />
                 Sua conta ainda não tem acesso ao Helpdesk. Peça a um administrador.
               </div>
             )}
           </div>
 
           <div className="card">
-            <h2>Área</h2>
+            <h2>
+              <BuildingIcon size={15} />
+              Área
+            </h2>
             <p>Define o escopo dos seus relatórios.</p>
 
             {department ? (
